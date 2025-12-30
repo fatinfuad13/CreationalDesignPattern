@@ -15,7 +15,7 @@ import java.util.List;
  * Supports both semicolon and comma separators.
  */
 public class CsvLoader {
-
+    private static CsvLoader csvloader;
     /**
      * Loads expenses from a CSV file.
      * Expected format: date;category;amount;notes
@@ -26,6 +26,10 @@ public class CsvLoader {
      * @throws IOException              if file cannot be read
      * @throws IllegalArgumentException if CSV format is invalid
      */
+    private CsvLoader(){
+
+    }
+
     public List<Expense> loadFromFile(String filePath) throws IOException {
         List<Expense> expenses = new ArrayList<>();
 
@@ -104,5 +108,16 @@ public class CsvLoader {
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Invalid amount format: " + parts[2], e);
         }
+    }
+
+
+    public static CsvLoader getCsvLoader(){
+        if(csvloader == null) // add thread safety?
+        {
+            csvloader = new CsvLoader();
+
+        }
+
+        return csvloader;
     }
 }

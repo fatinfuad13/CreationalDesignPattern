@@ -1,4 +1,4 @@
-package io;
+package io.Writer;
 
 import model.Expense;
 import service.ExpenseRepository;
@@ -7,41 +7,27 @@ import service.Summarizer;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.Normalizer.Form;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
+import io.Formatter.Formatter;
+
 /**
  * Writes HTML expense reports with basic inline styling.
  */
-public class HtmlReportWriter {
-    private final DateTimeFormatter dateFormatter;
-    private final DateTimeFormatter monthFormatter;
-
-    public HtmlReportWriter() {
-        this.dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        this.monthFormatter = DateTimeFormatter.ofPattern("yyyy-MM");
+public class HtmlWriter implements Writer{
+    private Formatter formatter;
+    public HtmlWriter(Formatter formatter) {
+       this.formatter = formatter;
     }
 
-    public void writeReport(String filePath, ExpenseRepository repository) throws IOException {
-        List<Expense> allExpenses = repository.findAll();
-        Summarizer summarizer = new Summarizer(allExpenses);
+    
 
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
-            writeHtmlHeader(writer);
-            writeMonthlySummary(writer, summarizer);
-            writeCategoryBreakdown(writer, summarizer);
-            writeGrandTotal(writer, summarizer);
-            writeRecentEntries(writer, allExpenses);
-            writeHtmlFooter(writer);
-        }
-
-        System.out.println("HTML report written to: " + filePath);
-    }
-
-    private void writeHtmlHeader(BufferedWriter writer) throws IOException {
+    public void writeHeader(BufferedWriter writer) throws IOException {
         writer.write("<!DOCTYPE html>\n");
         writer.write("<html>\n<head>\n");
         writer.write("<title>BudgetBuddy Expense Report</title>\n");
@@ -58,21 +44,21 @@ public class HtmlReportWriter {
         writer.write("<h1>BudgetBuddy Expense Report</h1>\n");
     }
 
-    private void writeMonthlySummary(BufferedWriter writer, Summarizer summarizer) throws IOException {
+    public void writeMonthlySummary(BufferedWriter writer, Summarizer summarizer) throws IOException {
         writer.write("<h2>Monthly Summary</h2>\n");
         writer.write("<table>\n");
         writer.write("<tr><th>Month</th><th>Total Amount</th></tr>\n");
 
         Map<YearMonth, Double> monthlyTotals = summarizer.monthlyTotals();
         for (Map.Entry<YearMonth, Double> entry : monthlyTotals.entrySet()) {
-            String monthStr = formatMonth(entry.getKey());
-            String amountStr = formatAmount(entry.getValue());
+            String monthStr = formatter.formatMonth(entry.getKey());
+            String amountStr = formatter.formatAmount(entry.getValue());
             writer.write(String.format("<tr><td>%s</td><td>%s</td></tr>\n", monthStr, amountStr));
         }
         writer.write("</table>\n");
     }
 
-    private void writeCategoryBreakdown(BufferedWriter writer, Summarizer summarizer) throws IOException {
+    public void writeCategoryBreakdown(BufferedWriter writer, Summarizer summarizer) throws IOException {
         writer.write("<h2>Category Breakdown (All Time)</h2>\n");
         writer.write("<table>\n");
         writer.write("<tr><th>Category</th><th>Total Amount</th><th>Visual</th></tr>\n");
@@ -85,7 +71,7 @@ public class HtmlReportWriter {
         for (Map.Entry<String, Double> entry : categoryTotals.entrySet()) {
             String category = entry.getKey();
             double amount = entry.getValue();
-            String amountStr = formatAmount(amount);
+            String amountStr = formatter.formatAmount(amount);
             String barHtml = createBarHtml(amount, maxAmount);
             writer.write(String.format("<tr><td>%s</td><td>%s</td><td>%s</td></tr>\n",
                     category, amountStr, barHtml));
@@ -93,12 +79,12 @@ public class HtmlReportWriter {
         writer.write("</table>\n");
     }
 
-    private void writeGrandTotal(BufferedWriter writer, Summarizer summarizer) throws IOException {
+    public void writeGrandTotal(BufferedWriter writer, Summarizer summarizer) throws IOException {
         writer.write(String.format("<p class=\"total\">Grand Total: %s</p>\n",
-                formatAmount(summarizer.grandTotal())));
+                formatter.formatAmount(summarizer.grandTotal())));
     }
 
-    private void writeRecentEntries(BufferedWriter writer, List<Expense> expenses) throws IOException {
+    public void writeRecentEntries(BufferedWriter writer, List<Expense> expenses) throws IOException {
         writer.write("<h2>Recent Entries (Last 10)</h2>\n");
         writer.write("<table>\n");
         writer.write("<tr><th>Date</th><th>Category</th><th>Amount</th><th>Notes</th></tr>\n");
@@ -106,31 +92,21 @@ public class HtmlReportWriter {
         int count = 0;
         for (int i = expenses.size() - 1; i >= 0 && count < 10; i--, count++) {
             Expense exp = expenses.get(i);
-            String dateStr = formatDate(exp.getDate());
+            String dateStr = formatter.formatDate(exp.getDate());
             writer.write(String.format("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n",
                     dateStr,
                     exp.getCategory(),
-                    formatAmount(exp.getAmount()),
+                    formatter.formatAmount(exp.getAmount()),
                     exp.getNotes()));
         }
         writer.write("</table>\n");
     }
 
-    private void writeHtmlFooter(BufferedWriter writer) throws IOException {
+    public void writeFooter(BufferedWriter writer) throws IOException {
         writer.write("</body>\n</html>\n");
     }
 
-    private String formatDate(LocalDate date) {
-        return date.format(dateFormatter);
-    }
-
-    private String formatMonth(YearMonth month) {
-        return month.format(monthFormatter);
-    }
-
-    private String formatAmount(double amount) {
-        return String.format("%.2f", amount);
-    }
+  
 
     private String createBarHtml(double value, double maxValue) {
         int barWidth = (int) Math.round((value * 200) / maxValue);

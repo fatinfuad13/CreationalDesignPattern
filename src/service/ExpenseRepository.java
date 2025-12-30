@@ -11,12 +11,13 @@ import java.util.stream.Collectors;
  * In-memory repository for expense data.
  */
 public class ExpenseRepository {
+    private static ExpenseRepository expenseRepository;
     private final List<Expense> expenses;
 
     /**
      * Creates a new empty repository.
      */
-    public ExpenseRepository() {
+    private ExpenseRepository() {
         this.expenses = new ArrayList<>();
         System.out.println("Created new ExpenseRepository instance");
     }
@@ -74,5 +75,14 @@ public class ExpenseRepository {
      */
     public void clear() {
         expenses.clear();
+    }
+
+    public static ExpenseRepository getExpenseRepository(){
+        if(expenseRepository == null) // add thread safety?
+        {
+            expenseRepository = new ExpenseRepository();
+        }
+
+        return expenseRepository;
     }
 }
