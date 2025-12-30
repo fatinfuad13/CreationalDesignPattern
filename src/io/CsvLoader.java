@@ -15,7 +15,7 @@ import java.util.List;
  * Supports both semicolon and comma separators.
  */
 public class CsvLoader {
-    private static CsvLoader csvloader;
+    private static volatile CsvLoader csvloader;
     /**
      * Loads expenses from a CSV file.
      * Expected format: date;category;amount;notes
@@ -111,13 +111,24 @@ public class CsvLoader {
     }
 
 
-    public static CsvLoader getCsvLoader(){
+    /*public static CsvLoader getCsvLoader(){
         if(csvloader == null) // add thread safety?
         {
             csvloader = new CsvLoader();
 
         }
 
+        return csvloader;
+    }*/
+
+    public static CsvLoader getCsvLoader() {
+        if (csvloader == null) {
+            synchronized (CsvLoader.class) {
+                if (csvloader == null) {
+                    csvloader = new CsvLoader();
+                }
+            }
+        }
         return csvloader;
     }
 }

@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
  * In-memory repository for expense data.
  */
 public class ExpenseRepository {
-    private static ExpenseRepository expenseRepository;
+    private static volatile ExpenseRepository expenseRepository;
     private final List<Expense> expenses;
 
     /**
@@ -77,12 +77,25 @@ public class ExpenseRepository {
         expenses.clear();
     }
 
-    public static ExpenseRepository getExpenseRepository(){
+    /*public static ExpenseRepository getExpenseRepository(){
         if(expenseRepository == null) // add thread safety?
         {
             expenseRepository = new ExpenseRepository();
         }
 
         return expenseRepository;
+    }*/
+
+public static ExpenseRepository getExpenseRepository() {
+    if (expenseRepository == null) {
+        synchronized (ExpenseRepository.class) {
+            if (expenseRepository == null) {
+                expenseRepository = new ExpenseRepository();
+            }
+        }
     }
+    return expenseRepository;
+}
+
+
 }
